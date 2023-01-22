@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.18)
 
 project(ndzip)
 
+option(NDZIP_BUILD_COMPRESS "Build compress executable" ON)
 option(NDZIP_BUILD_TEST "Build unit tests" OFF)
 option(NDZIP_BUILD_BENCHMARK "Build benchmarks against other algorithms" OFF)
 option(NDZIP_WITH_MT "Enable parallel CPU implementation through OpenMP if available " ON)
@@ -13,7 +14,9 @@ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 include(SplitConfiguration)
 include(CheckLanguage)
 
-find_package(Boost REQUIRED COMPONENTS thread program_options)
+if (NDZIP_WITH_MT OR NDZIP_BUILD_COMPRESS OR NDZIP_BUILD_TEST)
+    find_package(Boost REQUIRED COMPONENTS thread program_options)
+endif ()
 
 if (NDZIP_WITH_MT)
     find_package(OpenMP)
@@ -189,17 +192,19 @@ add_library(io STATIC
 
 target_include_directories(io INTERFACE src)
 
-add_executable(compress
-    src/compress/compress.cc
-)
+if (NDZIP_BUILD_COMPRESS)
+    add_executable(compress
+        src/compress/compress.cc
+    )
 
-target_compile_options(compress PRIVATE ${NDZIP_CXX_FLAGS})
-target_link_libraries(compress PRIVATE ndzip io Boost::program_options)
-if (NDZIP_USE_HIPSYCL)
-    target_link_libraries(compress PRIVATE ndzip-sycl)
-endif ()
-if (NDZIP_USE_CUDA)
-    target_link_libraries(compress PRIVATE ndzip-cuda)
+    target_compile_options(compress PRIVATE ${NDZIP_CXX_FLAGS})
+    target_link_libraries(compress PRIVATE ndzip io Boost::program_options)
+    if (NDZIP_USE_HIPSYCL)
+        target_link_libraries(compress PRIVATE ndzip-sycl)
+    endif ()
+    if (NDZIP_USE_CUDA)
+        target_link_libraries(compress PRIVATE ndzip-cuda)
+    endif ()
 endif ()
 
 
